@@ -1,0 +1,81 @@
+{
+  "totalRecords": 27,
+  "limit": 1,
+  "offset": 0,
+  "opportunitiesData": [
+    {
+      "active": "Yes",
+      "additionalInfoLink": null,
+      "archiveDate": "2026-10-04",
+      "archiveType": "auto30",
+      "award": {
+        "date": "2026-09-04",
+        "number": "47QTCA21D00CL"
+      },
+      "baseType": "Justification",
+      "classificationCode": "R408",
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=e1854329fa844e7690e9c00fe732034a",
+      "fullParentPathCode": "070.7013.70T030",
+      "fullParentPathName": "HOMELAND SECURITY, DEPARTMENT OF.TRANSPORTATION SECURITY ADMINISTRATION.ENTERPRISE INFORMATION TECHNOLOGY",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=e1854329fa844e7690e9c00fe732034a&limit=1"
+        }
+      ],
+      "naicsCode": "541511",
+      "naicsCodes": [
+        "541511"
+      ],
+      "noticeId": "e1854329fa844e7690e9c00fe732034a",
+      "officeAddress": {
+        "zipcode": "20598",
+        "city": "Springfield",
+        "countryCode": "USA",
+        "state": "VA"
+      },
+      "organizationType": "OFFICE",
+      "placeOfPerformance": {
+        "city": {
+          "code": "9832",
+          "name": "Bristow"
+        },
+        "state": {
+          "code": "VA",
+          "name": "Virginia"
+        },
+        "zip": "20136",
+        "country": {
+          "code": "USA",
+          "name": "UNITED STATES"
+        }
+      },
+      "pointOfContact": [
+        {
+          "fax": "",
+          "type": "primary",
+          "email": "thomas.zamfino1@tsa.dhs.gov",
+          "phone": "5712273850",
+          "fullName": "Tommy Zamfino"
+        }
+      ],
+      "postedDate": "2026-09-04",
+      "resourceLinks": [
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/5511905ccf5e4cf6b61367bf5c16f39f/download"
+      ],
+      "responseDeadLine": null,
+      "solicitationNumber": "JA-2026-03-8045",
+      "title": "Sole Source Justification JA-2026-03-8045 - TSA STIP SETA Bridge Support",
+      "type": "Justification",
+      "typeOfSetAside": null,
+      "typeOfSetAsideDescription": null,
+      "uiLink": "https://sam.gov/workspace/contract/opp/e1854329fa844e7690e9c00fe732034a/view"
+    }
+  ],
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://api.sam.gov/prod/opportunities/v2/search?postedFrom=09/01/2026&postedTo=09/05/2026&limit=1&ncode=541511"
+    }
+  ]
+}
