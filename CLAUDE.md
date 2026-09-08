@@ -128,6 +128,14 @@ can only be triggered by waiting until tomorrow is not workable.
 **Every new table gets an `organizationId` column defaulting to `"default"`.**
 Multi-tenancy later then becomes a migration, not a rewrite.
 
+**Pin any figure that came from a time-sensitive query.** Counts that depend on `now()`
+drift, and they drift silently, because the number was correct when it was taken. This
+has already happened twice: 14 biddable notices were past deadline when audited and 22
+the next afternoon; 22% of rows were dimmed at the accessibility audit and 33% a day
+later. Both figures were true and both would have been read as current. Record what a
+number was measured against, or phrase it so the movement is the point — "at the time I
+measured it", not a bare percentage.
+
 **Verify against the layer you are making a claim about.** A screenshot is evidence
 about the screenshot; `scrollWidth` is evidence about the layout. Both directions of
 this have already cost time here: a `+02:00` deadline was attributed to Wiesbaden from

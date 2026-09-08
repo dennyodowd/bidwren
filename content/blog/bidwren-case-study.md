@@ -153,7 +153,8 @@ Stack: Next.js, TypeScript, Postgres (Neon), Drizzle, Tailwind, Vercel Cron, Res
 
 I build production software fast. Internal tools, API integrations, data pipelines,
 and the automation that connects systems which don't talk to each other. Bidwren went
-from an empty folder to a live product on its own domain, and I work at that pace on
-client projects too.
+from an empty folder to a live product on its own domain in five and a half hours,
+sending real email against real government data. I work at that pace on client
+projects too.
 
 Available for contract work.
