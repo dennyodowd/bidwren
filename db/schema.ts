@@ -77,7 +77,7 @@ export const notices = pgTable(
      * The UTC offset the contracting office stated the deadline in, e.g. "-04:00".
      *
      * The instant in `responseDeadline` is unambiguous, but the *wall clock* matters:
-     * 47% of real deadlines are not Eastern, and a 10:00 AM Wiesbaden deadline rendered
+     * 47% of real deadlines are not Eastern, and a 10:00 AM Vicenza deadline rendered
      * in ET reads as 4:00 AM. Keeping the offset lets us show the time as the office
      * actually stated it. Null whenever there is no deadline.
      */

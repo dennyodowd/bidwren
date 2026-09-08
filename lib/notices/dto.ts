@@ -11,8 +11,27 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-/** Minutes of offset for US Eastern, so we can label the common case "ET" not "UTC-4". */
-const EASTERN_OFFSETS = new Set(["-04:00", "-05:00"]);
+/**
+ * The UTC offset America/New_York is actually on at a given instant, in minutes.
+ *
+ * A bare offset does not identify a zone: -05:00 is Eastern in January but Central in
+ * September. Comparing against Eastern *at the deadline's own instant* is what makes the
+ * "ET" label safe to apply.
+ */
+function easternOffsetMinutesAt(instant: Date): number | null {
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(instant)
+    .find((part) => part.type === "timeZoneName")?.value;
+
+  // "GMT-04:00", or plain "GMT" at a zero offset.
+  const match = name?.match(/GMT([+-])(\d{2}):(\d{2})/);
+  if (!match) return name === "GMT" ? 0 : null;
+  const magnitude = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === "-" ? -magnitude : magnitude;
+}
 
 /** "-04:00" → -240 minutes. Null for an unparseable or absent offset. */
 function offsetToMinutes(offset: string | null): number | null {
@@ -27,7 +46,7 @@ function offsetToMinutes(offset: string | null): number | null {
  * Formats an instant at the offset the contracting office stated it in.
  *
  * 47% of real deadlines are not Eastern — the feed spans UTC-10 to UTC+9 — so rendering
- * everything in ET turns a 10:00 AM Wiesbaden deadline into "4:00 AM ET". We shift the
+ * everything in ET turns a 10:00 AM Vicenza deadline into "4:00 AM ET". We shift the
  * instant by the recorded offset and format in UTC rather than mapping the offset back to
  * an IANA zone, because an offset does not identify a zone unambiguously and we only need
  * to reproduce the stated wall clock.
@@ -43,12 +62,22 @@ function formatAtOffset(
   return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", ...opts }).format(shifted);
 }
 
-/** "ET" for Eastern, otherwise "UTC+2" / "UTC-7". Null when the offset is unknown. */
-function zoneLabel(offset: string | null): string | null {
+/**
+ * "ET" for Eastern, otherwise "UTC+2" / "UTC-7". Null when the offset is unknown.
+ *
+ * Requires the instant, not just the offset: matching a static set of Eastern offsets
+ * labelled every -05:00 deadline "ET", which in September is Central. Twenty-nine
+ * notices in the live feed were mislabelled that way.
+ *
+ * A -04:00 September deadline is still only *consistent* with Eastern — Atlantic time
+ * shares the offset — but consistency at the right instant is as far as an offset can
+ * take us, and it is strictly better than a fixed set.
+ */
+function zoneLabel(offset: string | null, instant: Date | null): string | null {
   if (!offset) return null;
-  if (EASTERN_OFFSETS.has(offset)) return "ET";
   const minutes = offsetToMinutes(offset);
   if (minutes === null) return null;
+  if (instant && minutes === easternOffsetMinutesAt(instant)) return "ET";
   if (minutes === 0) return "UTC";
   const sign = minutes < 0 ? "-" : "+";
   const hours = Math.floor(Math.abs(minutes) / 60);
@@ -141,7 +170,7 @@ export function toNoticeCardData(
   const deadline = notice.responseDeadline;
   // Display only — the instant, and therefore every countdown, is unaffected.
   const offsetMinutes = offsetToMinutes(notice.responseDeadlineOffset);
-  const zone = zoneLabel(notice.responseDeadlineOffset);
+  const zone = zoneLabel(notice.responseDeadlineOffset, deadline);
 
   return {
     noticeId: notice.noticeId,
