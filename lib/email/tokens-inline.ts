@@ -66,8 +66,8 @@ export function dueStyle(urgent: boolean): string {
  */
 export function buttonStyle(urgent: boolean): string {
   return urgent
-    ? `display:inline-block;font-size:12.5px;font-weight:700;color:${color.paper000};background:${color.signalCritical};padding:8px 16px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`
-    : `display:inline-block;font-size:12.5px;font-weight:600;color:${color.paper000};background:${color.ink900};padding:8px 16px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`;
+    ? `display:inline-block;font-size:12.5px;font-weight:700;color:${color.paper000};background:${color.signalCritical};padding:13px 20px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`
+    : `display:inline-block;font-size:12.5px;font-weight:600;color:${color.paper000};background:${color.ink900};padding:13px 20px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`;
 }
 
 export function cardCellStyle(index: number, urgent: boolean): string {

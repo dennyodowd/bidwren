@@ -41,6 +41,46 @@ const DEADLINE_ORDER = sql`
   ${notices.responseDeadline} asc nulls last
 `;
 
+/**
+ * The same three bands with the live deadlines reversed.
+ *
+ * Only the deadline ordering flips — no-deadline and closed notices stay in bands 2 and
+ * 3, because "reverse the sort" should not promote expired notices to the top.
+ */
+const DEADLINE_ORDER_DESC = sql`
+  case
+    when ${notices.responseDeadline} is null then 1
+    when ${notices.responseDeadline} < now() or not ${notices.active} then 2
+    else 0
+  end asc,
+  ${notices.responseDeadline} desc nulls last
+`;
+
+/**
+ * Maps the sort filter onto an ORDER BY.
+ *
+ * The `deadline` case reuses DEADLINE_ORDER verbatim rather than rebuilding it. That
+ * expression is load-bearing: a plain `response_deadline asc nulls last` looks right in
+ * any test with fresh data and matches the mockup, but buries every live notice beneath
+ * the expired ones — the exact bug that shipped in V1.
+ */
+function orderFor(filter: NoticeFilter): SQL[] {
+  const direction = filter.dir === "desc" ? sql`desc` : sql`asc`;
+
+  switch (filter.sort) {
+    case "posted":
+      return [sql`${notices.postedDate} ${direction}`, DEADLINE_ORDER];
+    case "title":
+      return [sql`lower(${notices.title}) ${direction}`, DEADLINE_ORDER];
+    case "deadline":
+    default:
+      // Reversing shows the furthest-out live deadlines first, keeping the bands intact.
+      return filter.dir === "desc"
+        ? [DEADLINE_ORDER_DESC, sql`${notices.postedDate} desc`]
+        : [DEADLINE_ORDER, sql`${notices.postedDate} desc`];
+  }
+}
+
 /** Conditions shared by the list and the counts, excluding the notice-type filter. */
 function baseConditions(filter: NoticeFilter): SQL[] {
   const conditions: SQL[] = [eq(notices.organizationId, ORGANIZATION_ID)];
@@ -102,7 +142,7 @@ export async function listNotices(
     .from(notices)
     .leftJoin(noticeStates, triageJoin)
     .where(where)
-    .orderBy(DEADLINE_ORDER, desc(notices.postedDate))
+    .orderBy(...orderFor(filter))
     .limit(PAGE_SIZE)
     .offset((filter.page - 1) * PAGE_SIZE);
 

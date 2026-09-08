@@ -6,9 +6,13 @@ import { TriageButtons } from "./TriageButtons";
 /**
  * One row of the opportunities table.
  *
+ * A real <tr>/<td> so screen readers can associate each value with its column header,
+ * with `display: grid` carrying the visual layout. Below the md breakpoint the same
+ * markup restyles into a stacked card — semantics are identical at every width.
+ *
  * Urgency is encoded three ways at once — colour, weight/size, and the left rule — so it
- * never depends on colour alone. Per the design tokens: under 72 hours is rust with a
- * dark rule, 72–168 hours takes a muted rule, beyond that no rule.
+ * never depends on colour alone. Under 72 hours is rust with a dark rule, 72–168 hours
+ * takes a muted rule, beyond that no rule.
  */
 
 /** Left rule colour by urgency tier. Dismissed and deadline-less rows get none. */
@@ -19,9 +23,15 @@ function railColor(notice: NoticeCardData): string {
   return "transparent";
 }
 
+/**
+ * Countdown colour.
+ *
+ * Closed and dateless rows use ink-500 rather than ink-350: at 5.6:1 it still reads as
+ * secondary but clears AA, where ink-350 sat at 2.4:1.
+ */
 function countdownColor(notice: NoticeCardData): string {
   if (notice.deadlineState === "closed" || notice.deadlineState === "none") {
-    return "var(--ink-350)";
+    return "var(--ink-500)";
   }
   return notice.urgencyTier === "critical" ? "var(--signal-critical)" : "var(--ink-900)";
 }
@@ -32,31 +42,44 @@ function barColor(tier: NoticeCardData["urgencyTier"]): string {
   return "var(--signal-mute)";
 }
 
+/** Mobile label shown before each value when the row collapses into a card. */
+function CellLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="mr-2 inline-block w-[74px] shrink-0 font-mono text-[9.5px] tracking-[0.09em] text-ink-500 md:hidden"
+    >
+      {children}
+    </span>
+  );
+}
+
+const CELL = "min-w-0 px-2.5 max-md:flex max-md:items-baseline max-md:px-0 max-md:py-0.5";
+
 export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: number }) {
   const isCritical = notice.urgencyTier === "critical";
   /**
-   * Fading marks a row as no longer actionable. A closed deadline qualifies; a *missing*
-   * one does not — roughly a fifth of real notices never carry a deadline, and fading
-   * them would misrepresent the informational feed as dead.
+   * A closed or dismissed row recedes through its background and weight, never through
+   * `opacity`: opacity composites text and background together, which dropped every cell
+   * in these rows to between 1.6:1 and 3.0:1.
    */
-  const faded = notice.deadlineState === "closed" || notice.isDismissed;
+  const receded = notice.deadlineState === "closed" || notice.isDismissed;
 
   return (
-    <div
+    <tr
       style={{
         gridTemplateColumns: TABLE_GRID,
         borderLeft: `3px solid ${railColor(notice)}`,
-        background: faded
+        background: receded
           ? "var(--paper-050)"
           : index % 2
             ? "var(--paper-100)"
             : "var(--paper-000)",
-        opacity: faded ? 0.62 : 1,
       }}
-      className="grid min-h-[46px] items-center border-b border-line-100 px-[14px] py-1.5"
+      className="grid min-h-[46px] items-center border-b border-line-100 px-[14px] py-1.5 max-md:flex max-md:flex-col max-md:items-stretch max-md:gap-1 max-md:py-3"
     >
       {/* Response due — countdown, date, and depletion bar */}
-      <div className="flex flex-col justify-center gap-[3px] self-stretch border-r border-line-100 pr-[10px]">
+      <td className="flex flex-col justify-center gap-[3px] self-stretch border-r border-line-100 pr-[10px] max-md:flex-row max-md:items-center max-md:justify-between max-md:border-r-0 max-md:pr-0">
         <div className="flex items-baseline gap-1.5">
           <span
             className="tabular font-mono tracking-[-0.02em]"
@@ -71,6 +94,7 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
           {notice.deadlineLabel && notice.deadlineState === "open" && (
             <span className="font-mono text-[10.5px] text-ink-500">
               {notice.deadlineLabel}
+              {notice.deadlineZoneLabel ? ` ${notice.deadlineZoneLabel}` : ""}
             </span>
           )}
         </div>
@@ -83,13 +107,13 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
             }}
           />
         </div>
-      </div>
+      </td>
 
       {/* Title and solicitation number */}
-      <div className="min-w-0 px-3">
+      <td className="min-w-0 px-3 max-md:px-0">
         <div
           title={notice.title}
-          className="overflow-hidden text-[13.5px] leading-[1.3] tracking-[-0.005em] text-ellipsis whitespace-nowrap"
+          className="overflow-hidden text-[13.5px] leading-[1.3] tracking-[-0.005em] text-ellipsis whitespace-nowrap max-md:text-[15px] max-md:whitespace-normal"
           style={{
             fontWeight: notice.isSaved ? 600 : 500,
             textDecoration: notice.isDismissed ? "line-through" : "none",
@@ -98,6 +122,7 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
           {notice.uiLink ? (
             <a href={notice.uiLink} target="_blank" rel="noopener noreferrer">
               {notice.title}
+              <span className="sr-only"> (opens on sam.gov in a new tab)</span>
             </a>
           ) : (
             notice.title
@@ -106,42 +131,49 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
         <div className="mt-0.5 font-mono text-[10px] text-ink-500">
           {notice.solicitationNumber ?? "—"}
         </div>
-      </div>
+      </td>
 
       {/* Agency over office */}
-      <div className="min-w-0 px-[10px] leading-[1.3]" title={notice.agencyFull ?? undefined}>
-        <div className="text-[12px] font-semibold tracking-[0.01em] text-ink-700">
-          {notice.agencyShort ?? "—"}
-        </div>
-        <div className="overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-ink-500">
-          {notice.agencyOffice ?? ""}
-        </div>
-      </div>
+      <td className={`${CELL} leading-[1.3]`} title={notice.agencyFull ?? undefined}>
+        <CellLabel>AGENCY</CellLabel>
+        <span className="min-w-0">
+          <span className="block text-[12px] font-semibold tracking-[0.01em] text-ink-700">
+            {notice.agencyShort ?? "—"}
+          </span>
+          <span className="block overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-ink-500">
+            {notice.agencyOffice ?? ""}
+          </span>
+        </span>
+      </td>
 
       {/* Notice type — filled dot for bid-eligible, hollow ring for informational */}
-      <div className="flex min-w-0 items-center gap-[7px] px-[10px]">
-        <span
-          aria-hidden
-          className="h-[7px] w-[7px] flex-none rounded-full"
-          style={
-            notice.isBiddable
-              ? { background: "var(--ink-900)" }
-              : { border: "1.5px solid var(--line-dot)" }
-          }
-        />
-        <span
-          className="min-w-0 text-[11.5px] leading-[1.25]"
-          style={{
-            fontWeight: notice.isBiddable ? 600 : 400,
-            color: notice.isBiddable ? "var(--ink-900)" : "var(--ink-500)",
-          }}
-        >
-          {notice.type}
+      <td className={CELL}>
+        <CellLabel>TYPE</CellLabel>
+        <span className="flex min-w-0 items-center gap-[7px]">
+          <span
+            aria-hidden
+            className="h-[7px] w-[7px] flex-none rounded-full"
+            style={
+              notice.isBiddable
+                ? { background: "var(--ink-900)" }
+                : { border: "1.5px solid var(--line-dot)" }
+            }
+          />
+          <span
+            className="min-w-0 text-[11.5px] leading-[1.25]"
+            style={{
+              fontWeight: notice.isBiddable ? 600 : 400,
+              color: notice.isBiddable ? "var(--ink-900)" : "var(--ink-500)",
+            }}
+          >
+            {notice.type}
+          </span>
         </span>
-      </div>
+      </td>
 
       {/* Set-aside — absent on ~41% of real notices, so an empty state is the norm */}
-      <div className="min-w-0 px-[10px]">
+      <td className={CELL}>
+        <CellLabel>SET-ASIDE</CellLabel>
         {notice.setAside ? (
           <span
             title={notice.setAsideFull ?? undefined}
@@ -150,19 +182,25 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
             {notice.setAside}
           </span>
         ) : (
-          <span className="text-[11px] text-ink-350">—</span>
+          <span className="text-[11px] text-ink-450">—</span>
         )}
-      </div>
+      </td>
 
-      <div className="px-2 font-mono text-[11.5px] text-ink-600">
+      <td className={`${CELL} font-mono text-[11.5px] text-ink-600`}>
+        <CellLabel>NAICS</CellLabel>
         {notice.naicsCode ?? "—"}
-      </div>
+      </td>
 
-      <div className="px-2 text-right font-mono text-[11px] text-ink-500">
+      <td
+        className={`${CELL} text-right font-mono text-[11px] text-ink-500 max-md:text-left`}
+      >
+        <CellLabel>POSTED</CellLabel>
         {notice.postedLabel}
-      </div>
+      </td>
 
-      <TriageButtons notice={notice} />
-    </div>
+      <td className="max-md:pt-1">
+        <TriageButtons notice={notice} />
+      </td>
+    </tr>
   );
 }

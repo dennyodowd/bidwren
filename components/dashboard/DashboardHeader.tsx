@@ -28,7 +28,7 @@ export function DashboardHeader({
     .replace(/,/g, "");
 
   return (
-    <div className="flex flex-wrap items-stretch justify-between gap-6 bg-ink-900 px-5 text-paper-200">
+    <div className="flex flex-wrap items-stretch justify-between gap-6 bg-ink-900 px-5 text-paper-200 max-md:gap-2">
       <div className="flex items-center gap-[11px] py-[13px]">
         <div
           aria-hidden
@@ -42,7 +42,7 @@ export function DashboardHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-[18px] py-[13px] text-[12px]">
+      <div className="flex flex-wrap items-center gap-[18px] py-[13px] text-[12px] max-md:gap-3 max-md:pt-0">
         <div className="flex items-center gap-[7px] text-paper-200/70">
           {/* Decorative — always paired with the text beside it, never colour alone. */}
           <span

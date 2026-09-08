@@ -23,7 +23,7 @@ export const tokens = {
     line250: "#D8D8D2",
     line200: "#E0E0DA",
     line100: "#E7E7E2",
-    lineDot: "#A8AEB4",
+    lineDot: "#7A8087",
     lineDivider: "#DEDED8",
 
     paper300: "#E6E6E0",

@@ -60,7 +60,7 @@
   --paper-250: #e9e9e3; /* table toolbar band */
   --paper-050: #f4f4f0; /* dismissed / closed row fill */
   --ink-450: #6c7278; /* muted controls and counts */
-  --line-dot: #a8aeb4; /* hollow indicator ring, informational notices */
+  --line-dot: #7a8087; /* hollow indicator ring — 3.85:1, clears the 3:1 UI-graphic floor */
   --line-divider: #deded8; /* segmented-control dividers */
   --surface-control: #ffffff; /* selects and triage buttons */
 }
@@ -117,4 +117,31 @@ body {
 /* Numeric columns — countdowns, dates, NAICS — must align. */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/**
+ * Focus indicator.
+ *
+ * No single colour reaches 3:1 against both the paper surfaces and the near-black
+ * segmented control, so this is a double ring: the inner light band separates it from
+ * dark backgrounds, the outer dark band from light ones. Applies to keyboard focus only,
+ * so pointer users see no change.
+ */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--paper-000),
+    0 0 0 4px var(--ink-900);
+  border-radius: var(--radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

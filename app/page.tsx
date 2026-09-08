@@ -75,24 +75,59 @@ async function NoticeSection({
         agencies={options.agencies}
         setAsides={options.setAsides}
       />
-      <div className="px-5">
+      <section aria-labelledby="results-heading" id="results" className="px-5">
+        <h2 id="results-heading" className="sr-only">
+          Opportunities
+        </h2>
+        {/* Announces the outcome of a filter, sort or triage change to screen readers. */}
+        <p aria-live="polite" className="sr-only">
+          {result.total === 0
+            ? "No opportunities match these filters."
+            : `Showing ${result.rows.length} of ${result.total} opportunities.`}
+        </p>
         <TableToolbar
           filter={filter}
           shown={result.rows.length}
           total={result.total}
+          page={filter.page}
+          pageSize={PAGE_SIZE}
           savedCount={result.savedCount}
           dismissedCount={result.dismissedCount}
         />
-        <NoticeTable notices={result.rows} snapshotLabel={snapshotLabel} />
+        <NoticeTable
+          notices={result.rows}
+          filter={filter}
+          snapshotLabel={snapshotLabel}
+        />
         <TablePagination filter={filter} total={result.total} pageSize={PAGE_SIZE} />
-      </div>
+      </section>
     </>
   );
 }
 
+/**
+ * Mirrors the real table's height and rhythm so resolving the Suspense boundary does not
+ * shift the page. A bare line of text collapsed the layout and then jumped.
+ */
 function TableSkeleton() {
   return (
-    <div className="px-5 py-10 text-[12.5px] text-ink-500">Loading opportunities…</div>
+    <div className="px-5 pt-[132px]" aria-hidden>
+      <div className="border border-line-250 bg-paper-000">
+        <div className="h-[38px] border-b border-line-300 bg-paper-300" />
+        {Array.from({ length: 12 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex min-h-[46px] items-center gap-4 border-b border-line-100 px-[14px]"
+            style={{ background: index % 2 ? "var(--paper-100)" : "var(--paper-000)" }}
+          >
+            <div className="h-3 w-[92px] rounded-[2px] bg-line-200" />
+            <div className="h-3 flex-1 rounded-[2px] bg-line-200" />
+            <div className="h-3 w-[120px] rounded-[2px] bg-line-200" />
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Loading opportunities…</span>
+    </div>
   );
 }
 
@@ -114,6 +149,12 @@ export default async function Page(props: PageProps<"/">) {
 
   return (
     <main className="min-h-screen bg-paper-200 pb-16">
+      <a
+        href="#results"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-[3px] focus:bg-ink-900 focus:px-3 focus:py-2 focus:text-[13px] focus:text-paper-000"
+      >
+        Skip to opportunities
+      </a>
       <DashboardHeader
         user={user}
         snapshotLabel={snapshotLabel}

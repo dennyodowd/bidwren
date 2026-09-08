@@ -23,19 +23,34 @@ export function TableToolbar({
   filter,
   shown,
   total,
+  page,
+  pageSize,
   savedCount,
   dismissedCount,
 }: {
   filter: NoticeFilter;
   shown: number;
   total: number;
+  page: number;
+  pageSize: number;
   savedCount: number;
   dismissedCount: number;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2.5 border border-b-0 border-line-250 bg-paper-250 px-3.5 py-2 text-[12px] text-ink-600">
+      {/* "50 of 144 shown" read as a filter result when it was really page 1 of 3. */}
       <div className="font-mono text-[11.5px] whitespace-nowrap">
-        <span className="font-semibold text-ink-900">{shown}</span> of {total} shown
+        {total === 0 ? (
+          "No results"
+        ) : (
+          <>
+            Showing{" "}
+            <span className="font-semibold text-ink-900">
+              {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + shown}
+            </span>{" "}
+            of {total}
+          </>
+        )}
       </div>
       <span className="h-3.5 w-px bg-line-300" />
 

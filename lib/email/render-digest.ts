@@ -76,13 +76,13 @@ function renderBiddableCard(notice: NoticeCardData, index: number): string {
   </tr></table>
   <div style="${s.cardTitle}">${escapeHtml(notice.title)}</div>
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="${s.metaStrip}"><tr>
-    <td style="padding:7px 10px 7px 0;width:38%;vertical-align:top">${metaCell("AGENCY", [notice.agencyShort, notice.agencyOffice].filter(Boolean).join(" — ") || "—")}</td>
-    <td style="padding:7px 10px;width:34%;vertical-align:top">${metaCell("NOTICE TYPE", notice.type)}</td>
-    <td style="padding:7px 0 7px 10px;width:28%;vertical-align:top">${metaCell("SET-ASIDE · NAICS", setAsideNaics, s.metaValueMono)}</td>
+    <td class="bw-meta-cell" style="padding:7px 10px 7px 0;width:38%;vertical-align:top">${metaCell("AGENCY", [notice.agencyShort, notice.agencyOffice].filter(Boolean).join(" — ") || "—")}</td>
+    <td class="bw-meta-cell" style="padding:7px 10px;width:34%;vertical-align:top">${metaCell("NOTICE TYPE", notice.type)}</td>
+    <td class="bw-meta-cell" style="padding:7px 0 7px 10px;width:28%;vertical-align:top">${metaCell("SET-ASIDE · NAICS", setAsideNaics, s.metaValueMono)}</td>
   </tr></table>
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
     <td style="vertical-align:middle"><div style="${dueStyle(urgent)}">${dueLabel(notice)}</div></td>
-    ${notice.uiLink ? `<td style="text-align:right;vertical-align:middle"><a href="${escapeHtml(notice.uiLink)}" style="${buttonStyle(urgent)}">Open notice</a></td>` : ""}
+    ${notice.uiLink ? `<td style="text-align:right;vertical-align:middle"><a href="${escapeHtml(notice.uiLink)}" class="bw-cta" style="${buttonStyle(urgent)}">Open notice</a></td>` : ""}
   </tr></table>
 </td></tr>`;
 }
@@ -111,6 +111,22 @@ function renderEarlyRow(notice: NoticeCardData, index: number): string {
 </td></tr>`;
 }
 
+/**
+ * Inbox preview text.
+ *
+ * Without this, Gmail pulls the first body copy it finds — which was the wordmark and a
+ * date the client already displays, wasting the most valuable 90 characters in the
+ * inbox. The trailing zero-width spaces stop the client appending body copy after it.
+ */
+function preheader(data: DigestData): string {
+  const soonest = data.biddable.find(isUrgent);
+  const urgency = soonest
+    ? ` One closes in ${soonest.countdownLabel}.`
+    : "";
+  const text = `${data.biddable.length} biddable, ${data.earlyStage.length} to watch.${urgency}`;
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${color.paper200};opacity:0">${escapeHtml(text)}${"&#8204;&nbsp;".repeat(60)}</div>`;
+}
+
 export function digestSubject(data: DigestData): string {
   return `${data.biddable.length} biddable · ${data.earlyStage.length} early-stage`;
 }
@@ -134,9 +150,28 @@ export function renderDigestHtml(data: DigestData): string {
     : "Posted to SAM.gov under your watched NAICS codes.";
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bidwren daily digest</title></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bidwren daily digest</title>
+<!-- Stops Gmail and Apple Mail machine-inverting the palette, which would scramble the
+     rust that carries urgency meaning. -->
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<style>
+  /* Progressive enhancement only. Every rule here has an inline fallback, so clients
+     that strip embedded stylesheets (Gmail's mobile app) render exactly as today. */
+  @media only screen and (max-width: 600px) {
+    .bw-meta-cell { display: block !important; width: 100% !important; padding: 6px 0 !important; }
+    .bw-cta { display: block !important; text-align: center !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .bw-surface { background: #1c1e20 !important; }
+    .bw-ink { color: #eceef0 !important; }
+    .bw-muted { color: #b9bec4 !important; }
+  }
+</style>
+</head>
 <body style="${s.body}">
+${preheader(data)}
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:${color.paper200}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" cellpadding="0" cellspacing="0" width="640" style="${s.container};max-width:640px">
 

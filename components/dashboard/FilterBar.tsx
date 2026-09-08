@@ -75,10 +75,16 @@ export function FilterBar({
   const hidden = filterToQuery({ ...filter, agency: null, setAside: null, days: DEFAULT_POSTED_RANGE, page: 1 });
 
   return (
-    <div className="border-b border-line-250 bg-paper-000 px-5 pt-4">
+    <section aria-labelledby="filters-heading" className="border-b border-line-250 bg-paper-000 px-5 pt-4">
+      <h2 id="filters-heading" className="sr-only">
+        Filters
+      </h2>
       <div className="mb-3.5 flex flex-wrap items-baseline gap-3.5">
         <h1 className="m-0 text-[19px] font-semibold tracking-[-0.015em]">
-          Overnight opportunities
+          {/* Only "overnight" when the range actually is; otherwise say what is shown. */}
+          {filter.days === 1
+            ? "Overnight opportunities"
+            : `Opportunities from the last ${filter.days} days`}
         </h1>
         <div className="text-[12.5px] text-ink-450">
           <span className="font-semibold text-ink-900">{newCount}</span> new since
@@ -90,8 +96,12 @@ export function FilterBar({
 
       <div className="flex flex-wrap items-end gap-[26px] pb-3.5">
         <div>
-          <div className={LABEL_CLASS}>NOTICE TYPE</div>
-          <div className="flex flex-wrap overflow-hidden rounded-[4px] border border-line-300 bg-surface-control">
+          <div className={LABEL_CLASS} id="notice-type-label">NOTICE TYPE</div>
+          <div
+            role="group"
+            aria-labelledby="notice-type-label"
+            className="flex flex-wrap overflow-hidden rounded-[4px] border border-line-300 bg-surface-control max-md:w-full"
+          >
             {segments.map((segment, index) => {
               const active = filter.type === segment.key;
               return (
@@ -127,18 +137,21 @@ export function FilterBar({
         </div>
 
         {/* A GET form, so the selects work with JavaScript disabled. */}
-        <form method="get" action="/" className="flex flex-wrap items-end gap-2.5">
+        <form method="get" action="/" className="flex flex-wrap items-end gap-2.5 max-md:w-full max-md:flex-col max-md:items-stretch">
           {Object.entries(hidden).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
 
           <div>
-            <div className={LABEL_CLASS}>AGENCY</div>
+            <label className={LABEL_CLASS} htmlFor="filter-agency">
+              AGENCY
+            </label>
             <select
+              id="filter-agency"
               name="agency"
               defaultValue={filter.agency ?? ""}
               style={CHEVRON}
-              className={`${SELECT_CLASS} min-w-[150px]`}
+              className={`${SELECT_CLASS} min-w-[150px] max-md:w-full`}
             >
               <option value="">All agencies</option>
               {agencies.map((agency) => (
@@ -150,12 +163,15 @@ export function FilterBar({
           </div>
 
           <div>
-            <div className={LABEL_CLASS}>SET-ASIDE</div>
+            <label className={LABEL_CLASS} htmlFor="filter-setAside">
+              SET-ASIDE
+            </label>
             <select
+              id="filter-setAside"
               name="setAside"
               defaultValue={filter.setAside ?? ""}
               style={CHEVRON}
-              className={`${SELECT_CLASS} min-w-[160px]`}
+              className={`${SELECT_CLASS} min-w-[160px] max-md:w-full`}
             >
               <option value="">Any set-aside</option>
               {setAsides.map((setAside) => (
@@ -167,12 +183,15 @@ export function FilterBar({
           </div>
 
           <div>
-            <div className={LABEL_CLASS}>POSTED</div>
+            <label className={LABEL_CLASS} htmlFor="filter-days">
+              POSTED
+            </label>
             <select
+              id="filter-days"
               name="days"
               defaultValue={String(filter.days)}
               style={CHEVRON}
-              className={`${SELECT_CLASS} min-w-[130px]`}
+              className={`${SELECT_CLASS} min-w-[130px] max-md:w-full`}
             >
               {POSTED_RANGES.map((range) => (
                 <option key={range} value={range}>
@@ -196,6 +215,6 @@ export function FilterBar({
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
