@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { User } from "@/db/schema";
 import { userInitials } from "@/lib/users/current";
 
@@ -59,6 +61,14 @@ export function DashboardHeader({
         <div className="text-paper-200/70">
           Saved search: <span className="font-medium text-paper-200">All watched NAICS</span>
         </div>
+        {/* Without this the blog is reachable only by typing the URL — SiteHeader
+            carries the return link, but it only renders on blog pages. */}
+        <Link
+          href="/blog"
+          className="-my-1.5 py-1.5 font-mono text-[11px] tracking-[0.04em] text-paper-200/70 no-underline hover:text-paper-200"
+        >
+          NOTES
+        </Link>
         <div
           title={user.email}
           className="flex h-6 w-6 items-center justify-center rounded-[3px] bg-paper-200/15 text-[10px] font-semibold tracking-[0.03em]"
