@@ -79,7 +79,7 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
       className="grid min-h-[46px] items-center border-b border-line-100 px-[14px] py-1.5 max-md:flex max-md:flex-col max-md:items-stretch max-md:gap-1 max-md:py-3"
     >
       {/* Response due — countdown, date, and depletion bar */}
-      <td className="flex flex-col justify-center gap-[3px] self-stretch border-r border-line-100 pr-[10px] max-md:flex-row max-md:items-center max-md:justify-between max-md:border-r-0 max-md:pr-0">
+      <td className="flex flex-col justify-center gap-[3px] self-stretch border-r border-line-100 pr-[10px] max-md:border-r-0 max-md:pr-0">
         <div className="flex items-baseline gap-1.5">
           <span
             className="tabular font-mono tracking-[-0.02em]"
@@ -98,7 +98,7 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
             </span>
           )}
         </div>
-        <div className="h-[3px] w-[92px] overflow-hidden bg-line-200">
+        <div className="h-[3px] w-[92px] overflow-hidden bg-line-200 max-md:w-full">
           <div
             className="h-[3px]"
             style={{
@@ -140,7 +140,13 @@ export function NoticeRow({ notice, index }: { notice: NoticeCardData; index: nu
           <span className="block text-[12px] font-semibold tracking-[0.01em] text-ink-700">
             {notice.agencyShort ?? "—"}
           </span>
-          <span className="block overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-ink-500">
+          {/*
+            Truncates to one line in the desktop table, but must wrap on mobile: a
+            `nowrap` office name such as "Office of Inspector General OIG (36C10M)" sets
+            an unbreakable min-content floor, and a `display: table` element is sized to
+            max(width, min-content) — so it pushed the whole table past the viewport.
+          */}
+          <span className="block overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-ink-500 max-md:overflow-visible max-md:whitespace-normal">
             {notice.agencyOffice ?? ""}
           </span>
         </span>

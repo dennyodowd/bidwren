@@ -75,11 +75,11 @@ export function FilterBar({
   const hidden = filterToQuery({ ...filter, agency: null, setAside: null, days: DEFAULT_POSTED_RANGE, page: 1 });
 
   return (
-    <section aria-labelledby="filters-heading" className="border-b border-line-250 bg-paper-000 px-5 pt-4">
+    <section aria-labelledby="filters-heading" className="border-b border-line-250 bg-paper-000 px-5 pt-4 max-md:px-3 max-md:pt-3">
       <h2 id="filters-heading" className="sr-only">
         Filters
       </h2>
-      <div className="mb-3.5 flex flex-wrap items-baseline gap-3.5">
+      <div className="mb-3.5 flex flex-wrap items-baseline gap-3.5 max-md:mb-2 max-md:gap-1">
         <h1 className="m-0 text-[19px] font-semibold tracking-[-0.015em]">
           {/* Only "overnight" when the range actually is; otherwise say what is shown. */}
           {filter.days === 1
@@ -94,13 +94,13 @@ export function FilterBar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-[26px] pb-3.5">
-        <div>
+      <div className="flex flex-wrap items-end gap-[26px] pb-3.5 max-md:gap-3 max-md:pb-3">
+        <div className="max-md:w-full max-md:min-w-0">
           <div className={LABEL_CLASS} id="notice-type-label">NOTICE TYPE</div>
           <div
             role="group"
             aria-labelledby="notice-type-label"
-            className="flex flex-wrap overflow-hidden rounded-[4px] border border-line-300 bg-surface-control max-md:w-full"
+            className="flex flex-wrap overflow-hidden rounded-[4px] border border-line-300 bg-surface-control max-md:w-full max-md:flex-nowrap max-md:overflow-x-auto max-md:rounded-none max-md:border-x-0"
           >
             {segments.map((segment, index) => {
               const active = filter.type === segment.key;
@@ -118,7 +118,7 @@ export function FilterBar({
                     color: active ? "var(--paper-000)" : "var(--ink-600)",
                     fontWeight: active ? 600 : 500,
                   }}
-                  className="flex items-center gap-1.5 px-3 py-[7px] text-[12.5px] tracking-[-0.005em] no-underline"
+                  className="flex shrink-0 items-center gap-1.5 px-3 py-[7px] text-[12.5px] tracking-[-0.005em] no-underline"
                 >
                   {segment.label}
                   <span
@@ -137,7 +137,7 @@ export function FilterBar({
         </div>
 
         {/* A GET form, so the selects work with JavaScript disabled. */}
-        <form method="get" action="/" className="flex flex-wrap items-end gap-2.5 max-md:w-full max-md:flex-col max-md:items-stretch">
+        <form method="get" action="/" className="flex flex-wrap items-end gap-2.5 max-md:grid max-md:w-full max-md:grid-cols-2 max-md:items-end max-md:gap-2">
           {Object.entries(hidden).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
@@ -182,7 +182,7 @@ export function FilterBar({
             </select>
           </div>
 
-          <div>
+          <div className="max-md:col-span-2">
             <label className={LABEL_CLASS} htmlFor="filter-days">
               POSTED
             </label>
