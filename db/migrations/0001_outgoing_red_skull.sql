@@ -1,0 +1,1 @@
+ALTER TABLE "notices" ADD COLUMN "response_deadline_offset" text;

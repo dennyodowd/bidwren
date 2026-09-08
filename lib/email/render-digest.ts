@@ -56,6 +56,7 @@ function flagLabel(notice: NoticeCardData): string {
 function dueLabel(notice: NoticeCardData): string {
   if (notice.deadlineState === "none") return "No response date given";
   if (notice.deadlineState === "closed") return "Response period closed";
+  // deadlineLongLabel already carries the office's own clock and its zone.
   return `Response due ${notice.deadlineLongLabel}`;
 }
 

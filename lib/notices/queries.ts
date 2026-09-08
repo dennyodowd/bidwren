@@ -247,12 +247,43 @@ export async function getPendingDigestNotices(now: Date = new Date()) {
         eq(notices.organizationId, ORGANIZATION_ID),
         isNull(notices.digestSentAt),
         eq(notices.active, true),
+        /**
+         * SAM leaves `active: true` on notices whose response date has passed, so the
+         * active flag alone let closed notices into the "BIDDABLE NOW" section — a
+         * heading that promises you can still respond.
+         *
+         * A null deadline still qualifies: those are legitimately open, not expired.
+         */
+        sql`(${notices.responseDeadline} is null or ${notices.responseDeadline} > now())`,
       ),
     )
     .orderBy(sql`(${notices.track} = 'biddable') desc`, DEADLINE_ORDER)
     .limit(DIGEST_LIMIT);
 
   return rows.map((notice) => toNoticeCardData(notice, undefined, now));
+}
+
+/**
+ * Marks notices whose deadline has already passed as digested, without sending them.
+ *
+ * `getPendingDigestNotices` now excludes expired notices, so without this they would sit
+ * in the pending queue forever, re-evaluated on every run and never drained. Returns the
+ * count so the route can report it.
+ */
+export async function markExpiredNoticesDigested(): Promise<number> {
+  const db = getDb();
+  const rows = await db
+    .update(notices)
+    .set({ digestSentAt: new Date() })
+    .where(
+      and(
+        eq(notices.organizationId, ORGANIZATION_ID),
+        isNull(notices.digestSentAt),
+        sql`${notices.responseDeadline} is not null and ${notices.responseDeadline} <= now()`,
+      ),
+    )
+    .returning({ noticeId: notices.noticeId });
+  return rows.length;
 }
 
 /** Marks a digest's notices as sent. Runs only after the send succeeds. */

@@ -57,10 +57,17 @@ export function dueStyle(urgent: boolean): string {
   return `font-family:${font.mono};font-size:${urgent ? "13px" : "12px"};font-weight:${urgent ? 600 : 500};color:${urgent ? color.signalCritical : color.ink700};letter-spacing:-0.01em;`;
 }
 
+/**
+ * The primary call to action.
+ *
+ * The design file specifies the non-urgent variant as paper-000 with a dark border, but
+ * that puts a near-white button on a paper-000 row: in Gmail it reads as disabled. Dark
+ * on light reads as the action it is, and rust stays reserved for urgency alone.
+ */
 export function buttonStyle(urgent: boolean): string {
   return urgent
     ? `display:inline-block;font-size:12.5px;font-weight:700;color:${color.paper000};background:${color.signalCritical};padding:8px 16px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`
-    : `display:inline-block;font-size:12px;font-weight:600;color:${color.ink900};background:${color.paper000};padding:7px 14px;border-radius:${radius.base};text-decoration:none;border:1px solid ${color.ink900};font-family:${font.sans};`;
+    : `display:inline-block;font-size:12.5px;font-weight:600;color:${color.paper000};background:${color.ink900};padding:8px 16px;border-radius:${radius.base};text-decoration:none;letter-spacing:0.01em;font-family:${font.sans};`;
 }
 
 export function cardCellStyle(index: number, urgent: boolean): string {

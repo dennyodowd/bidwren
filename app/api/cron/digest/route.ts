@@ -16,6 +16,7 @@ import { log } from "@/lib/logger";
 import {
   getPendingDigestNotices,
   hasRecentSuccessfulIngest,
+  markExpiredNoticesDigested,
   markNoticesDigested,
 } from "@/lib/notices/queries";
 import { ORGANIZATION_ID } from "@/lib/users/current";
@@ -70,11 +71,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Drain notices that closed before we got to them. They are never emailed — a digest
+  // is about what you can still act on — but they must leave the pending queue or they
+  // would be re-evaluated forever. They remain on the dashboard as history.
+  const expiredSkipped = dryRun ? 0 : await markExpiredNoticesDigested();
+
   const pending = await getPendingDigestNotices(now);
   const biddable = pending.filter((notice) => notice.isBiddable);
   // Everything that is not biddable — including unknown types such as "Special Notice",
   // which was 22% of a real sample. Never folded into the biddable section.
-  const earlyStage = pending.filter((notice) => !notice.isBiddable);
+  //
+  // Sorted by posted date rather than deadline: two thirds of this section carries no
+  // deadline at all, so ranking it by one orders most rows on a field they lack.
+  const earlyStage = pending
+    .filter((notice) => !notice.isBiddable)
+    .sort((a, b) => b.postedDate.localeCompare(a.postedDate));
 
   if (pending.length === 0) {
     await db.insert(digestSends).values({
@@ -85,7 +96,7 @@ export async function GET(request: NextRequest) {
       biddableCount: 0,
       informationalCount: 0,
     });
-    return Response.json({ ok: true, sent: false, reason: "no-matches" });
+    return Response.json({ ok: true, sent: false, reason: "no-matches", expiredSkipped });
   }
 
   const buildData = (recipientEmail: string): DigestData => ({
@@ -176,6 +187,7 @@ export async function GET(request: NextRequest) {
       biddableCount: biddable.length,
       informationalCount: earlyStage.length,
       noticeCount: pending.length,
+      expiredSkipped,
       errors: failed.map((f) => ({ email: f.email, error: f.error })),
     },
     { status: allFailed ? 502 : 200 },

@@ -28,7 +28,8 @@ export function NoticeTable({
     <div className="overflow-x-auto border border-line-250 bg-paper-000">
       <div style={{ minWidth: TABLE_MIN_WIDTH }}>
         <div
-          style={{ gridTemplateColumns: TABLE_GRID }}
+          // Matches the 3px urgency rail every data row carries, so columns line up.
+          style={{ gridTemplateColumns: TABLE_GRID, borderLeft: "3px solid transparent" }}
           className="sticky top-0 z-5 grid items-stretch border-b border-line-300 bg-paper-300 px-[14px] font-mono text-[9.5px] tracking-[0.09em] text-ink-500"
         >
           <div className="py-2 pr-[10px] leading-[1.3] font-semibold text-ink-900">
@@ -65,7 +66,7 @@ export function NoticeTable({
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-line-200 bg-paper-150 px-6 py-[11px] text-[11.5px] text-ink-500">
           <div>
             Days remaining are counted from the {snapshotLabel ?? "latest"} snapshot, not
-            live. Deadlines close at 5:00 PM ET on the date shown.
+            live. Deadline times are shown in the contracting office&rsquo;s own timezone.
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">

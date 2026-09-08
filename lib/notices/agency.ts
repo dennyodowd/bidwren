@@ -41,17 +41,42 @@ const AGENCY_ABBREVIATIONS: Record<string, string> = {
 const MINOR_WORDS = new Set(["of", "the", "and", "for", "in", "on", "to", "a", "an"]);
 
 /**
- * Title-cases an all-caps agency string, leaving short all-caps tokens (acronyms such as
- * GSA or CISA) alone.
+ * Acronyms that must survive title-casing.
+ *
+ * SAM writes everything in capitals, so an acronym is shape-indistinguishable from a
+ * short word — "OIG" and "AIR" are both three all-caps letters. A length heuristic
+ * therefore mangles either the acronyms or the words, so this is an explicit list.
+ * Anything unlisted falls through to title case, which is the safe default.
  */
+const KNOWN_ACRONYMS = new Set([
+  "NASA", "USDA", "OIG", "ASA", "US", "USA", "VA", "DHS", "DOD", "HHS", "GSA", "EPA",
+  "FBI", "CDC", "NIH", "FDA", "TSA", "CBP", "ICE", "FEMA", "CISA", "USCIS", "IRS",
+  "SSA", "NSF", "NRC", "DOE", "DOI", "DOJ", "DOT", "HUD", "OPM", "SBA", "NOAA", "FAA",
+  "USACE", "DISA", "DLA", "DCSA", "DTRA", "NGA", "NSA", "USAF", "USMC", "USCG", "VISN",
+  "IT", "HR", "RD", "OCONUS", "CONUS",
+]);
+
+/**
+ * True for tokens that keep their original casing: known acronyms, and anything with a
+ * digit (office codes such as "36C10M" or "257-NETWORK").
+ */
+function isAcronym(token: string): boolean {
+  const letters = token.replace(/[^A-Za-z0-9]/g, "");
+  if (!letters) return false;
+  if (/\d/.test(letters)) return true;
+  return KNOWN_ACRONYMS.has(letters.toUpperCase()) && letters === letters.toUpperCase();
+}
+
+/** Title-cases an all-caps agency string, leaving acronyms and office codes alone. */
 export function titleCaseAgency(value: string): string {
   return value
-    .toLowerCase()
     .split(/(\s+|[-/])/)
     .map((token, index) => {
-      if (!/[a-z]/.test(token)) return token;
-      if (index > 0 && MINOR_WORDS.has(token)) return token;
-      return token.charAt(0).toUpperCase() + token.slice(1);
+      if (!/[A-Za-z]/.test(token)) return token;
+      if (isAcronym(token)) return token;
+      const lower = token.toLowerCase();
+      if (index > 0 && MINOR_WORDS.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
     })
     .join("");
 }
@@ -69,10 +94,22 @@ export function agencyShortLabel(agencyTop: string | null | undefined): string |
   return titleCaseAgency(withoutSuffix);
 }
 
-/** The office sub-line beneath the agency. */
-export function agencyOfficeLabel(agencyOffice: string | null | undefined): string | null {
+/**
+ * The office sub-line beneath the agency.
+ *
+ * Returns null when the office adds nothing: 23% of real notices repeat the agency as
+ * its own second path segment ("ENERGY, DEPARTMENT OF.ENERGY, DEPARTMENT OF"), and 5%
+ * have a single-segment path with no office at all. Rendering the same string twice, or
+ * an empty second line, is worse than showing the agency once.
+ */
+export function agencyOfficeLabel(
+  agencyOffice: string | null | undefined,
+  agencyTop?: string | null,
+): string | null {
   const raw = agencyOffice?.trim();
-  return raw ? titleCaseAgency(raw) : null;
+  if (!raw) return null;
+  if (agencyTop && raw.toUpperCase() === agencyTop.trim().toUpperCase()) return null;
+  return titleCaseAgency(raw);
 }
 
 /** Full dotted hierarchy, readable — shown on hover. */

@@ -73,6 +73,15 @@ export const notices = pgTable(
      * Frequently null — null in sample.json.
      */
     responseDeadline: timestamp("response_deadline", { withTimezone: true }),
+    /**
+     * The UTC offset the contracting office stated the deadline in, e.g. "-04:00".
+     *
+     * The instant in `responseDeadline` is unambiguous, but the *wall clock* matters:
+     * 47% of real deadlines are not Eastern, and a 10:00 AM Wiesbaden deadline rendered
+     * in ET reads as 4:00 AM. Keeping the offset lets us show the time as the office
+     * actually stated it. Null whenever there is no deadline.
+     */
+    responseDeadlineOffset: text("response_deadline_offset"),
 
     naicsCode: text("naics_code"),
     naicsCodes: jsonb("naics_codes")

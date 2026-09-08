@@ -4,16 +4,26 @@ import { log } from "@/lib/logger";
 import { classifyTrack } from "./classify";
 import type { SamOpportunity } from "./types";
 
-/** Splits the dot-delimited agency hierarchy into its top level and immediate office. */
+/**
+ * Splits the dot-delimited agency hierarchy into its top level and a useful office.
+ *
+ * SAM repeats the department as its own second segment on 23% of notices —
+ * "VETERANS AFFAIRS, DEPARTMENT OF.VETERANS AFFAIRS, DEPARTMENT OF.OFFICE OF INSPECTOR
+ * GENERAL". Taking segment 1 blindly renders the agency twice; skipping to the first
+ * segment that actually differs keeps the real office name.
+ */
 function splitAgencyPath(path: string | null | undefined) {
   const segments = (path ?? "")
     .split(".")
     .map((segment) => segment.trim())
     .filter(Boolean);
-  return {
-    agencyTop: segments[0] ?? null,
-    agencyOffice: segments[1] ?? null,
-  };
+
+  const agencyTop = segments[0] ?? null;
+  const agencyOffice =
+    segments.slice(1).find((segment) => segment.toUpperCase() !== agencyTop?.toUpperCase()) ??
+    null;
+
+  return { agencyTop, agencyOffice };
 }
 
 /** Parses SAM's deadline, tolerating malformed values rather than failing a whole page. */
@@ -21,6 +31,20 @@ function parseDeadline(value: string | null | undefined): Date | null {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * Extracts the UTC offset the office stated the deadline in, e.g. "-04:00".
+ *
+ * Every deadline in the live feed carries an explicit offset; none are naive. We keep it
+ * because the instant alone loses the wall-clock time that actually means something to
+ * whoever set it. Returns null for a trailing "Z" — that is already UTC.
+ */
+function parseDeadlineOffset(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const match = value.match(/([+-])(\d{2}):?(\d{2})$/);
+  if (!match) return value.endsWith("Z") ? "+00:00" : null;
+  return `${match[1]}${match[2]}:${match[3]}`;
 }
 
 /**
@@ -63,6 +87,7 @@ export function normalizeNotice(
     archiveType: opportunity.archiveType ?? null,
     // Read via the capital-L spelling SAM actually uses.
     responseDeadline: parseDeadline(opportunity.responseDeadLine),
+    responseDeadlineOffset: parseDeadlineOffset(opportunity.responseDeadLine),
 
     naicsCode: opportunity.naicsCode ?? null,
     naicsCodes:

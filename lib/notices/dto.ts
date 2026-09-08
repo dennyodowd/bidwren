@@ -6,13 +6,55 @@ import { agencyFullLabel, agencyOfficeLabel, agencyShortLabel } from "./agency";
 import { setAsideLabel, setAsideTitle } from "./set-aside";
 import { computeUrgency, isClosingSoon, type DeadlineState, type UrgencyTier } from "./urgency";
 
-/** The product's timezone: SAM deadlines close at 5:00 PM ET. */
-const DISPLAY_TIMEZONE = "America/New_York";
-
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
+/** Minutes of offset for US Eastern, so we can label the common case "ET" not "UTC-4". */
+const EASTERN_OFFSETS = new Set(["-04:00", "-05:00"]);
+
+/** "-04:00" → -240 minutes. Null for an unparseable or absent offset. */
+function offsetToMinutes(offset: string | null): number | null {
+  if (!offset) return null;
+  const match = offset.match(/^([+-])(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const magnitude = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === "-" ? -magnitude : magnitude;
+}
+
+/**
+ * Formats an instant at the offset the contracting office stated it in.
+ *
+ * 47% of real deadlines are not Eastern — the feed spans UTC-10 to UTC+9 — so rendering
+ * everything in ET turns a 10:00 AM Wiesbaden deadline into "4:00 AM ET". We shift the
+ * instant by the recorded offset and format in UTC rather than mapping the offset back to
+ * an IANA zone, because an offset does not identify a zone unambiguously and we only need
+ * to reproduce the stated wall clock.
+ *
+ * Falls back to UTC when no offset was captured, which is honest about not knowing.
+ */
+function formatAtOffset(
+  instant: Date,
+  offsetMinutes: number | null,
+  opts: Intl.DateTimeFormatOptions,
+): string {
+  const shifted = new Date(instant.getTime() + (offsetMinutes ?? 0) * 60_000);
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", ...opts }).format(shifted);
+}
+
+/** "ET" for Eastern, otherwise "UTC+2" / "UTC-7". Null when the offset is unknown. */
+function zoneLabel(offset: string | null): string | null {
+  if (!offset) return null;
+  if (EASTERN_OFFSETS.has(offset)) return "ET";
+  const minutes = offsetToMinutes(offset);
+  if (minutes === null) return null;
+  if (minutes === 0) return "UTC";
+  const sign = minutes < 0 ? "-" : "+";
+  const hours = Math.floor(Math.abs(minutes) / 60);
+  const mins = Math.abs(minutes) % 60;
+  return `UTC${sign}${hours}${mins ? `:${String(mins).padStart(2, "0")}` : ""}`;
+}
 
 /**
  * Formats a plain "YYYY-MM-DD" date string without timezone conversion.
@@ -24,11 +66,6 @@ function formatDateString(value: string): string {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return value;
   return `${MONTHS[month - 1]} ${day}`;
-}
-
-/** Formats a real instant in the product's timezone. */
-function formatInstant(value: Date, opts: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat("en-US", { timeZone: DISPLAY_TIMEZONE, ...opts }).format(value);
 }
 
 /**
@@ -59,8 +96,10 @@ export interface NoticeCardData {
   postedLabel: string;
   /** Deadline calendar date, e.g. "Sep 8". Null when SAM gave none. */
   deadlineLabel: string | null;
-  /** Full deadline for the email, e.g. "Sep 8, 2026 · 5:00 PM ET". */
+  /** Full deadline for the email, e.g. "Sep 8, 2026 · 10:00 AM (UTC+2)". */
   deadlineLongLabel: string | null;
+  /** The clock the deadline is stated in: "ET", "UTC+2", or null if unknown. */
+  deadlineZoneLabel: string | null;
   /** "26h", "14d", "CLOSED", or "—". */
   countdownLabel: string;
   urgencyTier: UrgencyTier;
@@ -100,6 +139,9 @@ export function toNoticeCardData(
 ): NoticeCardData {
   const urgency = computeUrgency(notice.responseDeadline, notice.active, now);
   const deadline = notice.responseDeadline;
+  // Display only — the instant, and therefore every countdown, is unaffected.
+  const offsetMinutes = offsetToMinutes(notice.responseDeadlineOffset);
+  const zone = zoneLabel(notice.responseDeadlineOffset);
 
   return {
     noticeId: notice.noticeId,
@@ -110,17 +152,20 @@ export function toNoticeCardData(
     isBiddable: isBiddable(notice.type),
 
     agencyShort: agencyShortLabel(notice.agencyTop),
-    agencyOffice: agencyOfficeLabel(notice.agencyOffice),
+    agencyOffice: agencyOfficeLabel(notice.agencyOffice, notice.agencyTop),
     agencyFull: agencyFullLabel(notice.fullParentPathName),
 
     postedDate: notice.postedDate,
     postedLabel: formatDateString(notice.postedDate),
     deadlineLabel: deadline
-      ? formatInstant(deadline, { month: "short", day: "numeric" })
+      ? formatAtOffset(deadline, offsetMinutes, { month: "short", day: "numeric" })
       : null,
     deadlineLongLabel: deadline
-      ? `${formatInstant(deadline, { month: "short", day: "numeric", year: "numeric" })} · ${formatInstant(deadline, { hour: "numeric", minute: "2-digit" })} ET`
+      ? `${formatAtOffset(deadline, offsetMinutes, { month: "short", day: "numeric", year: "numeric" })} · ` +
+        `${formatAtOffset(deadline, offsetMinutes, { hour: "numeric", minute: "2-digit" })}` +
+        `${zone ? ` (${zone})` : ""}`
       : null,
+    deadlineZoneLabel: zone,
     countdownLabel: urgency.countdownLabel,
     urgencyTier: urgency.tier,
     deadlineState: urgency.state,

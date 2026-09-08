@@ -54,6 +54,7 @@ const UPSERT_SET = {
   archiveDate: sql`excluded.archive_date`,
   archiveType: sql`excluded.archive_type`,
   responseDeadline: sql`excluded.response_deadline`,
+  responseDeadlineOffset: sql`excluded.response_deadline_offset`,
   naicsCode: sql`excluded.naics_code`,
   naicsCodes: sql`excluded.naics_codes`,
   classificationCode: sql`excluded.classification_code`,
