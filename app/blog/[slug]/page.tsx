@@ -77,7 +77,9 @@ export default async function BlogPostPage(props: PageProps<"/blog/[slug]">) {
           Trusted content: these files are authored by us and committed to the repo.
           See lib/blog.ts before routing anything user-supplied through this.
         */}
-        <div className="prose" dangerouslySetInnerHTML={{ __html: post.html }} />
+        {/* pt-10 mirrors the header's pb-10, so the rule between them sits centred.
+            .prose spaces siblings only, so its first child has no margin of its own. */}
+        <div className="prose pt-10" dangerouslySetInnerHTML={{ __html: post.html }} />
       </article>
     </main>
   );
