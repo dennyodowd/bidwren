@@ -64,7 +64,18 @@ and any level can be missing.
 Match it exactly when reading the payload; a camelCased `responseDeadline` will
 silently read `undefined`.
 
-**`active` is the string `"Yes"`/`"No"`, not a boolean.**
+**`active` is the string `"Yes"`/`"No"`, not a boolean.** It also stays `"Yes"` long
+after the response deadline passes — it means "not withdrawn", not "still open". Any
+"can I bid on this" query must check the deadline itself.
+
+**Deadlines carry explicit UTC offsets, and 47% are not Eastern.** The live feed spans
+UTC-10 to UTC+9, because contracting offices exist worldwide and each states its
+deadline in local time. Store the instant *and* the stated offset, render the wall
+clock the office actually wrote, and keep countdowns and sorting on the instant.
+**An offset does not identify a timezone:** `-05:00` is Eastern in January and Central
+in September. To label one, compare against the offset `America/New_York` is on *at
+that deadline's instant* — a fixed set of "Eastern offsets" is wrong twice a year in
+opposite directions.
 
 **Rate limits are undocumented.** Assume they are low. Cap all pagination with a
 hard maximum page count, never loop until exhaustion, and log every outbound request
@@ -117,8 +128,41 @@ can only be triggered by waiting until tomorrow is not workable.
 **Every new table gets an `organizationId` column defaulting to `"default"`.**
 Multi-tenancy later then becomes a migration, not a rewrite.
 
-## Not yet built
+**Verify against the layer you are making a claim about.** A screenshot is evidence
+about the screenshot; `scrollWidth` is evidence about the layout. Both directions of
+this have already cost time here: a `+02:00` deadline was attributed to Wiesbaden from
+the solicitation prefix when `placeOfPerformance` plainly said Vicenza, and a
+horizontal-overflow bug was diagnosed from a screenshot artefact when the DOM measured
+clean. Where a claim is cheap to check directly — read the raw payload, query the
+table, measure the element — check it before acting on it. Be as willing to discard a
+bug that turns out not to exist as to fix one that does; the instinct to fix engages
+before the evidence is in.
 
-Nothing product-specific exists yet: no `lib/`, no `db/`, no schema, no
-`drizzle.config.ts`, no route handlers. `app/` is still the create-next-app template.
-`resend` is not yet in `package.json`.
+## What exists
+
+Deployed at `bidwren.com`, running on a daily Vercel cron.
+
+- `db/` — Drizzle schema and migrations. `notices`, `users`, `notice_states` (per-user
+  save/dismiss), `ingest_runs`, `digest_sends`. Neon over `neon-http`, so
+  `db.transaction()` throws; use `db.batch()`.
+- `lib/sam/` — typed client, classifier, normaliser. `lib/notices/` — filters, queries,
+  the `NoticeCardData` DTO that is the seam between data and presentation, urgency
+  tiers, agency labels. `lib/email/` — the digest renderer.
+- `app/api/cron/{ingest,digest}` — both callable manually with `?secret=`, or by Vercel
+  with a `CRON_SECRET` bearer token.
+- `app/page.tsx` + `components/dashboard/` — the opportunities table.
+- `app/blog/` + `content/blog/` — markdown posts, filename as slug, prerendered.
+
+Env vars beyond the four above: `CRON_SECRET`, `DIGEST_FROM`, `APP_URL`, and
+optionally `DATABASE_URL_UNPOOLED` (drizzle-kit only) and `DIGEST_REPLY_TO`.
+
+## Not built yet
+
+- **Auth.** The dashboard is publicly reachable and its triage state is writable by
+  anyone with the URL. `lib/users/current.ts` resolves the single enabled user and is
+  the one function a password gate would replace — as a root `proxy.ts`, not
+  `middleware.ts`, which Next 16 renamed.
+- **Description backfill.** `description_text` and `description_fetched_at` exist and
+  stay null. Must never become a dependency of ingestion.
+- **Saved searches and delivery-time settings.** Referenced in the dashboard chrome and
+  the email footer; no feature behind either.
