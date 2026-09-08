@@ -1,0 +1,201 @@
+import Link from "next/link";
+
+import { agencyShortLabel } from "@/lib/notices/agency";
+import {
+  DEFAULT_POSTED_RANGE,
+  filterHref,
+  filterToQuery,
+  isFilterActive,
+  POSTED_RANGES,
+  type NoticeFilter,
+} from "@/lib/notices/filter";
+import { setAsideLabel } from "@/lib/notices/set-aside";
+import { ALL_KNOWN_TYPES } from "@/lib/sam/classify";
+
+import { FilterAutoSubmit } from "./FilterAutoSubmit";
+
+const SELECT_CLASS =
+  "appearance-none rounded-[4px] border border-line-300 bg-surface-control py-[7px] pr-[26px] pl-[10px] text-[12.5px] font-medium text-ink-900";
+const LABEL_CLASS =
+  "mb-1.5 font-mono text-[9.5px] tracking-[0.11em] text-ink-500";
+/** The design's CSS-drawn chevron, kept as inline style so it stays with the control. */
+const CHEVRON: React.CSSProperties = {
+  backgroundImage:
+    "linear-gradient(45deg,transparent 50%,var(--ink-450) 50%),linear-gradient(135deg,var(--ink-450) 50%,transparent 50%)",
+  backgroundPosition: "calc(100% - 14px) 14px,calc(100% - 9px) 14px",
+  backgroundSize: "5px 5px,5px 5px",
+  backgroundRepeat: "no-repeat",
+};
+
+const RANGE_LABELS: Record<number, string> = {
+  1: "Last 24 hours",
+  7: "Last 7 days",
+  30: "Last 30 days",
+};
+
+export function FilterBar({
+  filter,
+  countsByType,
+  allCount,
+  biddableCount,
+  newCount,
+  closingSoonCount,
+  agencies,
+  setAsides,
+}: {
+  filter: NoticeFilter;
+  countsByType: Record<string, number>;
+  allCount: number;
+  biddableCount: number;
+  newCount: number;
+  closingSoonCount: number;
+  agencies: string[];
+  setAsides: { code: string; description: string | null }[];
+}) {
+  /**
+   * The segmented control lists All and Bid-eligible, then every known type, then any
+   * type actually present in the data that CLAUDE.md doesn't enumerate — "Special Notice"
+   * alone was 22% of a real sample, so an unlisted type must never be unreachable.
+   */
+  const extraTypes = Object.keys(countsByType)
+    .filter((type) => !ALL_KNOWN_TYPES.some((known) => known === type))
+    .sort();
+
+  const segments: { key: string; label: string; count: number }[] = [
+    { key: "all", label: "All", count: allCount },
+    { key: "biddable", label: "Bid-eligible", count: biddableCount },
+    ...[...ALL_KNOWN_TYPES, ...extraTypes].map((type) => ({
+      key: type,
+      label: type,
+      count: countsByType[type] ?? 0,
+    })),
+  ];
+
+  // Carried through the GET form so changing a select never drops the other filters.
+  const hidden = filterToQuery({ ...filter, agency: null, setAside: null, days: DEFAULT_POSTED_RANGE, page: 1 });
+
+  return (
+    <div className="border-b border-line-250 bg-paper-000 px-5 pt-4">
+      <div className="mb-3.5 flex flex-wrap items-baseline gap-3.5">
+        <h1 className="m-0 text-[19px] font-semibold tracking-[-0.015em]">
+          Overnight opportunities
+        </h1>
+        <div className="text-[12.5px] text-ink-450">
+          <span className="font-semibold text-ink-900">{newCount}</span> new since
+          yesterday ·{" "}
+          <span className="font-semibold text-ink-900">{closingSoonCount}</span> closing
+          within 5 days
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-[26px] pb-3.5">
+        <div>
+          <div className={LABEL_CLASS}>NOTICE TYPE</div>
+          <div className="flex flex-wrap overflow-hidden rounded-[4px] border border-line-300 bg-surface-control">
+            {segments.map((segment, index) => {
+              const active = filter.type === segment.key;
+              return (
+                <Link
+                  key={segment.key}
+                  href={filterHref(filter, { type: segment.key })}
+                  aria-current={active ? "true" : undefined}
+                  style={{
+                    borderLeft:
+                      index === 0
+                        ? "none"
+                        : `1px solid ${active ? "transparent" : "var(--line-divider)"}`,
+                    background: active ? "var(--ink-900)" : "transparent",
+                    color: active ? "var(--paper-000)" : "var(--ink-600)",
+                    fontWeight: active ? 600 : 500,
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-[7px] text-[12.5px] tracking-[-0.005em] no-underline"
+                >
+                  {segment.label}
+                  <span
+                    style={{
+                      background: active ? "rgba(251,251,249,0.18)" : "var(--paper-300)",
+                      color: active ? "var(--paper-000)" : "var(--ink-450)",
+                    }}
+                    className="rounded-[2px] px-1 py-px font-mono text-[10px] font-medium"
+                  >
+                    {segment.count}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* A GET form, so the selects work with JavaScript disabled. */}
+        <form method="get" action="/" className="flex flex-wrap items-end gap-2.5">
+          {Object.entries(hidden).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+
+          <div>
+            <div className={LABEL_CLASS}>AGENCY</div>
+            <select
+              name="agency"
+              defaultValue={filter.agency ?? ""}
+              style={CHEVRON}
+              className={`${SELECT_CLASS} min-w-[150px]`}
+            >
+              <option value="">All agencies</option>
+              {agencies.map((agency) => (
+                <option key={agency} value={agency}>
+                  {agencyShortLabel(agency) ?? agency}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className={LABEL_CLASS}>SET-ASIDE</div>
+            <select
+              name="setAside"
+              defaultValue={filter.setAside ?? ""}
+              style={CHEVRON}
+              className={`${SELECT_CLASS} min-w-[160px]`}
+            >
+              <option value="">Any set-aside</option>
+              {setAsides.map((setAside) => (
+                <option key={setAside.code} value={setAside.code}>
+                  {setAsideLabel(setAside.code, setAside.description) ?? setAside.code}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className={LABEL_CLASS}>POSTED</div>
+            <select
+              name="days"
+              defaultValue={String(filter.days)}
+              style={CHEVRON}
+              className={`${SELECT_CLASS} min-w-[130px]`}
+            >
+              {POSTED_RANGES.map((range) => (
+                <option key={range} value={range}>
+                  {RANGE_LABELS[range]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <FilterAutoSubmit />
+        </form>
+
+        {isFilterActive(filter) && (
+          <div className="ml-auto flex items-center gap-3.5 pb-px">
+            <Link
+              href="/"
+              className="text-[12px] text-ink-450 underline underline-offset-2"
+            >
+              Clear filters
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

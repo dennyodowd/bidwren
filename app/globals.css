@@ -1,26 +1,120 @@
 @import "tailwindcss";
 
+/**
+ * Design tokens, taken from "Bidwren Design Tokens.dc.html".
+ *
+ * Layer 1 — the raw values. This block is the only place colour literals live in CSS,
+ * and it is what a refreshed design file overwrites.
+ *
+ * The palette is light-only: the design specifies no dark values anywhere, so there is
+ * deliberately no prefers-color-scheme block. Adding one would mean inventing a palette
+ * the designer did not choose.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Type — the font variables come from next/font in app/layout.tsx */
+  --font-sans: var(--font-plex-sans), -apple-system, "Segoe UI", Helvetica, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, monospace;
+
+  --fs-page: 19px;
+  --fs-section: 17px;
+  --fs-deadline: 16px;
+  --fs-deadline-sm: 14px;
+  --fs-row: 13.5px;
+  --fs-body: 12.5px;
+  --fs-data: 11.5px;
+  --fs-tag: 10.5px;
+  --fs-label: 9.5px;
+
+  /* Neutrals — cool-grey ink on warm-neutral paper, ~95% of the interface */
+  --ink-900: #16181a;
+  --ink-700: #3e4348;
+  --ink-600: #4a4f55;
+  --ink-500: #5c6268;
+  --ink-350: #9aa0a6; /* disabled only — never live text */
+
+  --line-300: #c8c8c2;
+  --line-200: #e0e0da;
+  --line-100: #e7e7e2;
+
+  --paper-300: #e6e6e0;
+  --paper-200: #efefeb;
+  --paper-150: #f2f2ed;
+  --paper-100: #f7f7f3;
+  --paper-000: #fbfbf9;
+
+  /* Signal — four accents. Urgency never rides on colour alone; it always doubles
+     with weight, size and the left rule. */
+  --signal-critical: #8e2f14;
+  --signal-link: #2b4c8c;
+  --signal-live: #8fbf6a;
+  --signal-mute: #b8bcc0;
+
+  /* Geometry */
+  --row-h: 46px;
+  --radius: 3px;
+  --radius-lg: 4px;
+
+  /* Values used in the dashboard mockup but not enumerated in the tokens file.
+     Named here rather than inlined so they stay reviewable alongside the rest. */
+  --line-250: #d8d8d2; /* container borders throughout the dashboard */
+  --paper-250: #e9e9e3; /* table toolbar band */
+  --paper-050: #f4f4f0; /* dismissed / closed row fill */
+  --ink-450: #6c7278; /* muted controls and counts */
+  --line-dot: #a8aeb4; /* hollow indicator ring, informational notices */
+  --line-divider: #deded8; /* segmented-control dividers */
+  --surface-control: #ffffff; /* selects and triage buttons */
 }
 
+/**
+ * Layer 2 — expose tokens to Tailwind's utility generator. Names only, never literals.
+ *
+ * `inline` makes Tailwind emit utilities that reference the var() rather than the
+ * resolved value, so the tokens above remain the single source of truth.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+  --color-ink-500: var(--ink-500);
+  --color-ink-450: var(--ink-450);
+  --color-ink-350: var(--ink-350);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-line-300: var(--line-300);
+  --color-line-250: var(--line-250);
+  --color-line-200: var(--line-200);
+  --color-line-100: var(--line-100);
+  --color-line-dot: var(--line-dot);
+  --color-line-divider: var(--line-divider);
+
+  --color-paper-300: var(--paper-300);
+  --color-paper-250: var(--paper-250);
+  --color-paper-200: var(--paper-200);
+  --color-paper-150: var(--paper-150);
+  --color-paper-100: var(--paper-100);
+  --color-paper-050: var(--paper-050);
+  --color-paper-000: var(--paper-000);
+  --color-surface-control: var(--surface-control);
+
+  --color-signal-critical: var(--signal-critical);
+  --color-signal-link: var(--signal-link);
+  --color-signal-live: var(--signal-live);
+  --color-signal-mute: var(--signal-mute);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-card: var(--radius);
+  --radius-control: var(--radius-lg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper-200);
+  color: var(--ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numeric columns — countdowns, dates, NAICS — must align. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
